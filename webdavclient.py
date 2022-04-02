@@ -53,10 +53,16 @@ class Client:
             for chunk in response.iter_content(chunk_size=self.chunk_size):
                 local_file.write(chunk)
 
+    def put(self, remote_path, local_path, auth=None):
+        with open(local_path, "rb") as local_file:
+            response = self.send_request("PUT", remote_path, data=local_file, auth=auth)
+        return response.status_code
+
 
 if __name__ == "__main__":
     client = Client("https://demo.owncloud.com/remote.php/dav/files/demo/", "demo", "demo")
     # files = client.propfind()
     # for file in files:
     #     print(file)
-    client.get("Documents/Example.odt", "download/testdir/test.odt")
+    # client.get("Documents/Example.odt", "download/testdir/test.odt")
+    client.put("test.odt", "./download/test.odt")
