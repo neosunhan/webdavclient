@@ -29,6 +29,8 @@ class WebDAVClient:
 
     def propfind(self, path="", auth=None):
         response = self.send_request("PROPFIND", path=path, headers={"Depth": "1"}, auth=auth)
+        if (response.status_code == 404):
+            return []
         root = ET.fromstring(response.content)
 
         responses = []
