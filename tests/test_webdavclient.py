@@ -1,4 +1,3 @@
-from multiprocessing.dummy import DummyProcess
 import os
 import pytest
 from webdavclient import WebDAVClient
@@ -15,7 +14,7 @@ def test_propfind(client):
     items = client.propfind()
     assert any(item["Name"] == "Documents" and item["Resource Type"] == "Folder" for item in items)
     assert any(item["Name"] == "ownCloud Manual.pdf" and item["Resource Type"] == "File" for item in items)
-    # photos = client.propfind("Photos")
+    photos = client.propfind("Photos")
     assert any(photo["Name"] == "Lake-Constance.jpg" and photo["Resource Type"] == "File" for photo in photos)
 
 
@@ -33,8 +32,15 @@ def upload_file(client, request):
 def test_put(client, upload_file):
     assert any(item["Name"] == upload_file for item in client.propfind())
 
-# @pytest.fixture(params=os.listdir(DUMMY_FILES))
-# def download_file(client, tmpdir):
-#     client.get()
+@pytest.fixture
+def download_file(client, upload_file, tmpdir):
+    client.get(upload_file, tmpdir)
+    yield upload_file
+    
+#TODO write to different name
 
-# def test_get(client):
+def test_get(upload_file, download_file, tmpdir):
+    assert len(tmpdir.listdir()) == 1
+    with open(os.path.join(DUMMY_FILES, upload_file), "rb") as original:
+        with open(tmpdir / download_file, "rb") as downloaded:
+            assert original.read() == downloaded.read()
