@@ -1,8 +1,8 @@
-import os.path # change to pathlib.path
+import os.path
 import requests
 import xml.etree.ElementTree as ET
-from urllib.parse import unquote, urlsplit
 
+from urllib.parse import unquote, urlsplit
 from exceptions import RemoteResourceNotFoundException, UnauthorizedException
 
 class WebDAVClient:
@@ -78,9 +78,6 @@ class WebDAVClient:
 
 if __name__ == "__main__":
     client = WebDAVClient("https://demo.owncloud.com/remote.php/dav/files/demo/", "demo", "demo")
-    # files = client.propfind("ownCloud Manual.pdf")
-    # print(files)
-    # for file in files:
-    #     print(file)
-    client.get("Documents/Example.odt", "")
-    # client.put("test2.txt", "./testing/dummy_files/test.txt")
+    items = client.propfind()
+    client.get("ownCloud Manual.pdf", "my_owncloud_manual.pdf")
+    client.put("test.txt", "example_file.txt")
