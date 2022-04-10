@@ -1,7 +1,9 @@
 import os.path
 import requests
 import xml.etree.ElementTree as ET
+
 from urllib.parse import unquote, urlsplit
+from exceptions import RemoteResourceNotFoundException, UnauthorizedException
 
 class WebDAVClient:
     chunk_size = 10000
@@ -19,6 +21,10 @@ class WebDAVClient:
         path = os.path.join(self.hostname, path)
         kwargs.setdefault("timeout", self.timeout)
         response = self.session.request(method, path, **kwargs)
+        if response.status_code == 401:
+            raise UnauthorizedException(method, path, kwargs)
+        if response.status_code == 404:
+            raise RemoteResourceNotFoundException(path)
         return response
 
     def propfind(self, path="", auth=None):
@@ -52,11 +58,14 @@ class WebDAVClient:
         if os.path.isdir(local_path):
             local_path = os.path.join(local_path, os.path.basename(remote_path))
         with open(local_path, "wb") as local_file:
-            for chunk in response.iter_content(chunk_size=self.chunk_size):
+            for chunk in response.iter_content(chunk_size=WebDAVClient.chunk_size):
                 local_file.write(chunk)
         return local_path
 
     def put(self, remote_path, local_path, auth=None):
+        if len(remote_path) == 0:
+            raise ValueError("remote_path cannot be empty")
+        self.propfind(os.path.dirname(remote_path))
         with open(local_path, "rb") as local_file:
             response = self.send_request("PUT", remote_path, data=local_file, auth=auth)
         return response.status_code
@@ -71,10 +80,6 @@ class WebDAVClient:
 
 if __name__ == "__main__":
     client = WebDAVClient("https://demo.owncloud.com/remote.php/dav/files/demo/", "demo", "demo")
-    files = client.propfind("ownCloud Manual.pdf")
-    files = client.propfind("test.txt")
-    print(files)
-    # for file in files:
-    #     print(file)
-    # client.get("Documents/Example.odt", "download/testdir/test.odt")
-    # client.put("test.odt", "./download/test.odt")
+    items = client.propfind()
+    client.get("ownCloud Manual.pdf", "my_owncloud_manual.pdf")
+    client.put("test.txt", "example_file.txt")
